@@ -1,1 +1,3 @@
-pub mod rusty_dashed;
+pub use self::dashboard::Dashboard;
+
+mod dashboard;
