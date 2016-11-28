@@ -10,6 +10,7 @@ include = ["public"]
 mio = "0.6"
 staticfile = "*"
 iron = "*"
+hyper = "*"
 mount = "*"
 phf = "0.7.12"
 includedir = "0.2.0"
