@@ -17,3 +17,10 @@ includedir = "0.2.0"
 
 [build-dependencies]
 includedir_codegen = "0.2.0"
+
+[features]
+default = ["serve_static"]
+
+serve_static = []
+
+debug_static = []
