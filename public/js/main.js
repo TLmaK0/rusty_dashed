@@ -13,8 +13,9 @@ RustyDashed = {
     }).appendTo('head');
     $.getScript( path + '.js');
   },
-  createGridItem: function(x, y, width, height){
+  createGridItem: function(id, x, y, width, height){
     var gridItem = $(this._gridItem);
+    gridItem.children().children().attr("id", id); 
     gridItem.attr('data-gs-x', x);
     gridItem.attr('data-gs-y', y);
     gridItem.attr('data-gs-width', width);
