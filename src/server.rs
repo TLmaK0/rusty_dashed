@@ -11,7 +11,7 @@ use std::path::Path;
 use std::thread::{spawn, JoinHandle};
 use std::result::Result;
 use iron::middleware::Handler;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Sender, Receiver, channel};
 use Dashboard;
 
 struct WsServer {
@@ -67,7 +67,7 @@ impl Server {
         contents
     }
 
-    pub fn start(&self) -> WsSender {
+    pub fn start(&self) -> (Sender<String>, JoinHandle<&'static str>) {
         let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
         spawn(move || {
             let mut mount = Mount::new();
@@ -80,10 +80,21 @@ impl Server {
             WsServer{client: out}
         }).unwrap();
         let broadcast = webSocket.broadcaster();
+
         spawn(move || {
             webSocket.listen("0.0.0.0:3001").unwrap();
         });
-        broadcast
+
+        let (tx, rx) = channel();
+
+        let server = spawn(move || {
+            loop {
+                let message = rx.recv().unwrap();
+                broadcast.send(message);
+            }
+        });
+
+        (tx, server)
     }
 
 
