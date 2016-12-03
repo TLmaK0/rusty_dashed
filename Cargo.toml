@@ -15,7 +15,8 @@ mount = "*"
 phf = "0.7.12"
 includedir = "0.2.0"
 ws = "0.5.3"
-
+log = "*"
+env_logger = "*"
 [build-dependencies]
 includedir_codegen = "0.2.0"
 

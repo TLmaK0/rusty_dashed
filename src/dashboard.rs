@@ -22,7 +22,6 @@ impl Dashboard {
         });
         var webSocket = new WebSocket('ws://localhost:3001');
         webSocket.onmessage = function(event) {
-        console.log(event.data);
             eval(event.data);
         }
         "

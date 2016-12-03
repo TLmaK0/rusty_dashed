@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+extern crate env_logger;
 extern crate ws;
 extern crate iron;
 extern crate mount;

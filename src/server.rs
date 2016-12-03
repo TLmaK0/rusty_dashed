@@ -6,12 +6,12 @@ use std::io::prelude::*;
 use iron::{Iron, Request, Response, IronResult};
 use iron::status;
 use mount::Mount;
-use ws::{Handler as WsHandler, Handshake, Result as WsResult, Sender as WsSender, listen, Error, Message};
+use ws::{Handler as WsHandler, Handshake, Result as WsResult, Sender as WsSender, listen, Error, Message, WebSocket};
 use std::path::Path;
 use std::thread::{spawn, JoinHandle};
 use std::result::Result;
 use iron::middleware::Handler;
-use std::sync::mpsc::{Sender, Receiver, channel};
+use std::sync::mpsc::{Sender, Receiver};
 use Dashboard;
 
 struct WsServer {
@@ -19,64 +19,17 @@ struct WsServer {
 }
 
 impl WsHandler for WsServer {
-    fn on_message(&mut self, msg: Message) -> WsResult<()> {
-        self.client.send(msg)
-    }
-    
-    fn on_open(&mut self, _: Handshake) -> WsResult<()> {
-        //connection in        
-        let data1 = r#"a1({
-          "nodes": [
-            {"id": "Myriel", "group": 1},
-            {"id": "Napoleon", "group": 1},
-            {"id": "Mlle.Baptistine", "group": 1}
-          ],
-          "links": [
-            {"source": "Napoleon", "target": "Myriel", "value": 1},
-            {"source": "Mlle.Baptistine", "target": "Myriel", "value": 8},
-            {"source": "Napoleon", "target": "Mlle.Baptistine", "value": 4}
-          ]
-        })"#;
-
-        let data2 = r#"a3({
-          "nodes": [
-            {"id": "Myriel", "group": 1},
-            {"id": "Napoleon", "group": 1},
-            {"id": "Mlle.Baptistine", "group": 1}
-          ],
-          "links": [
-            {"source": "Napoleon", "target": "Myriel", "value": 1},
-            {"source": "Mlle.Baptistine", "target": "Myriel", "value": 8},
-            {"source": "Napoleon", "target": "Mlle.Baptistine", "value": 4}
-          ]
-        })"#;
-        let data3 = r#"a1({
-          "nodes": [
-            {"id": "Myriel", "group": 1},
-            {"id": "Napoleon", "group": 1},
-            {"id": "Mlle.Baptistine", "group": 1}
-          ],
-          "links": [
-            {"source": "Mlle.Baptistine", "target": "Myriel", "value": 8},
-            {"source": "Napoleon", "target": "Mlle.Baptistine", "value": 4}
-          ]
-        })"#;
-        self.client.send(data1);
-        self.client.send(data2);
-        self.client.send(data3)
-    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/public.rs"));
 
 pub struct Server {
     pub dashboard: Dashboard,
-    channel: (Sender<String>, Receiver<String>)
 }
 
 impl Server {
     pub fn new(dashboard: Dashboard) -> Server {
-        Server { dashboard: dashboard, channel: channel() }
+        Server { dashboard: dashboard }
     }
 
     fn get_static_file(req: &mut Request) -> IronResult<Response> {
@@ -114,14 +67,7 @@ impl Server {
         contents
     }
 
-
-    pub fn send(message: &str) {
-
-    }
-
-    pub fn start(&self) {
-        let (tx, rx): (Sender<String>, Receiver<String>) = channel();
-
+    pub fn start(&self) -> WsSender {
         let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
         spawn(move || {
             let mut mount = Mount::new();
@@ -130,10 +76,17 @@ impl Server {
             Iron::new(mount).http("0.0.0.0:3000").unwrap();
         }); 
 
-        listen("0.0.0.0:3001", |client| {
-            WsServer { client: client }
-        }).unwrap()
+        let mut webSocket = WebSocket::new(|out| {
+            WsServer{client: out}
+        }).unwrap();
+        let broadcast = webSocket.broadcaster();
+        spawn(move || {
+            webSocket.listen("0.0.0.0:3001").unwrap();
+        });
+        broadcast
     }
+
+
 }
 
 struct DashboardMount {
