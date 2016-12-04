@@ -18,20 +18,17 @@ use WsServer;
 include!(concat!(env!("OUT_DIR"), "/public.rs"));
 
 pub struct Server {
-    dashboard: Option<Dashboard>,
+    dashboard: Dashboard,
 }
 
 lazy_static! {
-    static ref SERVER: Mutex<Server> = Mutex::new(Server{ dashboard: None });
 }
 
 impl Server {
     pub fn serve_dashboard(dashboard: Dashboard) -> JoinHandle<()> {
-        let mut server = SERVER.lock().unwrap();
-        server.dashboard = Some(dashboard);
-        let thread = server.start();
+        let join = Server{ dashboard: dashboard }.start();
         WsServer::send_message("start".to_owned());
-        thread
+        join
     }
 
     fn get_static_file(req: &mut Request) -> IronResult<Response> {
@@ -70,7 +67,7 @@ impl Server {
     }
 
     fn start(&self) -> JoinHandle<()> {
-        let dashboard = DashboardMount{dashboard: self.dashboard.clone().unwrap().get_init_script().to_owned()};
+        let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
         let server = spawn(move || {
             let mut mount = Mount::new();
             mount.mount("/", Server::get_static_file)
