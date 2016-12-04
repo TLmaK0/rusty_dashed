@@ -21,10 +21,17 @@ impl Dashboard {
           cellHeight: 80,
           verticalMargin: 10
         });
-        var webSocket = new WebSocket('ws://localhost:3001');
-        webSocket.onmessage = function(event) {
-            eval(event.data);
+        function start(){
+            var webSocket = new WebSocket('ws://localhost:3001');
+            webSocket.onmessage = function(event) {
+                eval(event.data);
+            }
+            webSocket.onclose = function(){
+                console.log('Not connected. Trying again');
+                setTimeout(start, 1000);
+            };
         }
+        start();
         "
     }
 

@@ -6,45 +6,32 @@ use std::io::prelude::*;
 use iron::{Iron, Request, Response, IronResult};
 use iron::status;
 use mount::Mount;
-use ws::{Handler as WsHandler, Handshake, Result as WsResult, Sender as WsSender, listen, Error, Message, WebSocket};
 use std::path::Path;
 use std::thread::{spawn, JoinHandle};
 use std::result::Result;
 use iron::middleware::Handler;
-use std::sync::mpsc::{Sender, Receiver, channel};
 use std::str::from_utf8;
 use std::sync::Mutex;
 use Dashboard;
-
-struct WsServer {
-    client: WsSender
-}
-
-impl WsHandler for WsServer {
-}
+use WsServer;
 
 include!(concat!(env!("OUT_DIR"), "/public.rs"));
 
 pub struct Server {
     dashboard: Option<Dashboard>,
-    sender: Option<Sender<String>>
 }
 
 lazy_static! {
-    static ref SERVER: Mutex<Server> = Mutex::new(Server{ dashboard: None, sender: None });
+    static ref SERVER: Mutex<Server> = Mutex::new(Server{ dashboard: None });
 }
 
 impl Server {
-    pub fn serve_dashboard(dashboard: Dashboard) -> JoinHandle<&'static str> {
+    pub fn serve_dashboard(dashboard: Dashboard) -> JoinHandle<()> {
         let mut server = SERVER.lock().unwrap();
         server.dashboard = Some(dashboard);
-        let (sender, thread) = server.start();
-        server.sender = Some(sender);
+        let thread = server.start();
+        WsServer::send_message("start".to_owned());
         thread
-    }
-
-    pub fn send_message(message: String){
-        SERVER.lock().unwrap().sender.clone().unwrap().send(message);
     }
 
     fn get_static_file(req: &mut Request) -> IronResult<Response> {
@@ -82,36 +69,16 @@ impl Server {
         contents
     }
 
-    fn start(&self) -> (Sender<String>, JoinHandle<&'static str>) {
+    fn start(&self) -> JoinHandle<()> {
         let dashboard = DashboardMount{dashboard: self.dashboard.clone().unwrap().get_init_script().to_owned()};
-        spawn(move || {
+        let server = spawn(move || {
             let mut mount = Mount::new();
             mount.mount("/", Server::get_static_file)
                 .mount("/js/rusty-dashed.js", dashboard);
             Iron::new(mount).http("0.0.0.0:3000").unwrap();
         }); 
-
-        let mut webSocket = WebSocket::new(|out| {
-            WsServer{client: out}
-        }).unwrap();
-        let broadcast = webSocket.broadcaster();
-
-        spawn(move || {
-            webSocket.listen("0.0.0.0:3001").unwrap();
-        });
-
-        let (tx, rx) = channel();
-
-        let server = spawn(move || {
-            loop {
-                let message = rx.recv().unwrap();
-                broadcast.send(message);
-            }
-        });
-
-        (tx, server)
+        server
     }
-
 
 }
 

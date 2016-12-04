@@ -10,7 +10,9 @@ extern crate hyper;
 
 pub use self::dashboard::Dashboard;
 pub use self::server::Server;
+pub use self::ws_server::WsServer;
 
 mod telemetry;
 mod dashboard;
 mod server;
+mod ws_server;
