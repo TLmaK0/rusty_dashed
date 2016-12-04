@@ -1,3 +1,4 @@
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
 extern crate env_logger;
 extern crate ws;
@@ -10,5 +11,6 @@ extern crate hyper;
 pub use self::dashboard::Dashboard;
 pub use self::server::Server;
 
+mod telemetry;
 mod dashboard;
 mod server;

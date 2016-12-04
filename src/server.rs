@@ -12,6 +12,8 @@ use std::thread::{spawn, JoinHandle};
 use std::result::Result;
 use iron::middleware::Handler;
 use std::sync::mpsc::{Sender, Receiver, channel};
+use std::str::from_utf8;
+use std::sync::Mutex;
 use Dashboard;
 
 struct WsServer {
@@ -24,12 +26,25 @@ impl WsHandler for WsServer {
 include!(concat!(env!("OUT_DIR"), "/public.rs"));
 
 pub struct Server {
-    pub dashboard: Dashboard,
+    dashboard: Option<Dashboard>,
+    sender: Option<Sender<String>>
+}
+
+lazy_static! {
+    static ref SERVER: Mutex<Server> = Mutex::new(Server{ dashboard: None, sender: None });
 }
 
 impl Server {
-    pub fn new(dashboard: Dashboard) -> Server {
-        Server { dashboard: dashboard }
+    pub fn serve_dashboard(dashboard: Dashboard) -> JoinHandle<&'static str> {
+        let mut server = SERVER.lock().unwrap();
+        server.dashboard = Some(dashboard);
+        let (sender, thread) = server.start();
+        server.sender = Some(sender);
+        thread
+    }
+
+    pub fn send_message(message: String){
+        SERVER.lock().unwrap().sender.clone().unwrap().send(message);
     }
 
     fn get_static_file(req: &mut Request) -> IronResult<Response> {
@@ -55,7 +70,7 @@ impl Server {
     #[cfg(feature = "serve_static")]
     fn get_file_content(file_path: &str) -> String {
         PUBLIC.get(&file_path).map(
-                |file_content| std::str::from_utf8(&file_content).unwrap().to_owned()
+                |file_content| from_utf8(&file_content).unwrap().to_owned()
             ).unwrap_or(String::from(""))
     }
 
@@ -67,8 +82,8 @@ impl Server {
         contents
     }
 
-    pub fn start(&self) -> (Sender<String>, JoinHandle<&'static str>) {
-        let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
+    fn start(&self) -> (Sender<String>, JoinHandle<&'static str>) {
+        let dashboard = DashboardMount{dashboard: self.dashboard.clone().unwrap().get_init_script().to_owned()};
         spawn(move || {
             let mut mount = Mount::new();
             mount.mount("/", Server::get_static_file)

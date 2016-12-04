@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Dashboard {
     graph_types: Vec<String>,
     graphs: Vec<(String, String, usize, usize, usize, usize)>
