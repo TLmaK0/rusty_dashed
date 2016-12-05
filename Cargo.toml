@@ -2,20 +2,21 @@
 name = "rusty_dashed"
 version = "0.1.0"
 authors = ["Hugo Freire <hfreire@abajar.com>"]
-
+description = "A web dashboard for telemetry in rust apps"
+license_file = "LICENSE"
 build = "build.rs"
 
 [dependencies]
 mio = "0.6"
-staticfile = "*"
-iron = "*"
-hyper = "*"
-mount = "*"
+staticfile = "~0"
+iron = "~0"
+hyper = "~0"
+mount = "~0"
 phf = "0.7.12"
 includedir = "0.2.0"
 ws = "0.5.3"
-log = "*"
-env_logger = "*"
+log = "~0"
+env_logger = "~0"
 lazy_static = "0.1.*"
 
 [build-dependencies]
