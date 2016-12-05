@@ -8,8 +8,9 @@ use std::path::Path;
 use std::thread::{spawn, JoinHandle};
 use iron::middleware::Handler;
 use staticfile::Static;
-use std::fs::File;
-use std::io::Read;
+#[allow(unused_imports)] use std::fs::File;
+#[allow(unused_imports)] use std::io::Read;
+#[allow(unused_imports)] use std::str::from_utf8;
 use Dashboard;
 use WsServer;
 
@@ -30,9 +31,9 @@ impl Server {
     }
 
     fn get_static_file(req: &mut Request) -> IronResult<Response> {
-        let request_path = format!("public/{}", req.url.path().join("/"));
+        let request_path = format!("./public/{}", req.url.path().join("/"));
         let file_path = match request_path.as_ref() {
-            "public/" => "public/index.html",
+            "./public/" => "./public/index.html",
             path => path
         };
 
@@ -58,10 +59,15 @@ impl Server {
 
     #[cfg(feature = "debug_static")]
     fn get_file_content(file_path: &str) -> String {
-        let mut file = File::open(file_path).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-        contents
+        if PUBLIC.get(&file_path).is_err() {
+            println!("File not found: {}", file_path);
+            "".to_owned()
+        } else {
+            let mut file = File::open(file_path).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            contents
+        }
     }
 
     fn start(&self) -> JoinHandle<()> {
