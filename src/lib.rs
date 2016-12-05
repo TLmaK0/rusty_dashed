@@ -4,6 +4,7 @@ extern crate env_logger;
 extern crate ws;
 extern crate iron;
 extern crate mount;
+extern crate staticfile;
 extern crate includedir;
 extern crate phf;
 extern crate hyper;

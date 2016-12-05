@@ -12,6 +12,7 @@ use std::result::Result;
 use iron::middleware::Handler;
 use std::str::from_utf8;
 use std::sync::Mutex;
+use staticfile::Static;
 use Dashboard;
 use WsServer;
 
@@ -70,7 +71,9 @@ impl Server {
         let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
         let server = spawn(move || {
             let mut mount = Mount::new();
-            mount.mount("/", Server::get_static_file)
+            mount
+                .mount("/", Server::get_static_file)
+                .mount("/graphs/", Static::new(Path::new("graphs")))
                 .mount("/js/rusty-dashed.js", dashboard);
             Iron::new(mount).http("0.0.0.0:3000").unwrap();
         }); 
