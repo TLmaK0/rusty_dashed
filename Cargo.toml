@@ -15,8 +15,6 @@ mount = "~0"
 phf = "0.7.12"
 includedir = "0.2.0"
 ws = "0.5.3"
-log = "~0"
-env_logger = "~0"
 lazy_static = "0.1.*"
 
 [build-dependencies]
