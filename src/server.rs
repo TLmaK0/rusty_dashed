@@ -7,8 +7,9 @@ use mount::Mount;
 use std::path::Path;
 use std::thread::{spawn, JoinHandle};
 use iron::middleware::Handler;
-use std::str::from_utf8;
 use staticfile::Static;
+use std::fs::File;
+use std::io::Read;
 use Dashboard;
 use WsServer;
 
