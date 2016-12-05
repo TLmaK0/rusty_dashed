@@ -1,17 +1,13 @@
 use iron::headers::ContentType;
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use iron::modifiers::Header;
-use std::fs::File;
-use std::io::prelude::*;
 use iron::{Iron, Request, Response, IronResult};
 use iron::status;
 use mount::Mount;
 use std::path::Path;
 use std::thread::{spawn, JoinHandle};
-use std::result::Result;
 use iron::middleware::Handler;
 use std::str::from_utf8;
-use std::sync::Mutex;
 use staticfile::Static;
 use Dashboard;
 use WsServer;

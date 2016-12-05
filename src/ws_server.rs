@@ -1,10 +1,9 @@
-use std::sync::mpsc::{Sender, Receiver, channel};
+use std::sync::mpsc::{Sender, channel};
 use std::sync::Mutex;
-use std::thread::{spawn, JoinHandle};
-use ws::{Handler as WsHandler, Handshake, Result as WsResult, Sender as WsSender, listen, Error, Message, WebSocket};
+use std::thread::{spawn};
+use ws::{Handler as WsHandler, WebSocket};
 
 pub struct WsServer {
-    client: WsSender
 }
 
 lazy_static! {
@@ -13,13 +12,13 @@ lazy_static! {
 
 impl WsServer {
     fn start_ws() -> Sender<String> {
-        let mut webSocket = WebSocket::new(|out| {
-            WsServer{client: out}
+        let web_socket = WebSocket::new(|_| {
+            WsServer{}
         }).unwrap();
-        let broadcast = webSocket.broadcaster();
+        let broadcast = web_socket.broadcaster();
 
         spawn(move || {
-            webSocket.listen("0.0.0.0:3001").unwrap();
+            web_socket.listen("0.0.0.0:3001").unwrap();
         });
 
         let (tx, rx) = channel();
@@ -27,7 +26,7 @@ impl WsServer {
         spawn(move || {
             loop {
                 let message = rx.recv().unwrap();
-                broadcast.send(message);
+                broadcast.send(message).unwrap();
             }
         });
         tx
@@ -35,7 +34,7 @@ impl WsServer {
 
     pub fn send_message(message: String){
         //TODO: remove this lock
-        SENDER.lock().unwrap().clone().send(message);
+        SENDER.lock().unwrap().clone().send(message).unwrap();
     }
 }
 
