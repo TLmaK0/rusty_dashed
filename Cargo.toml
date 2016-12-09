@@ -4,6 +4,7 @@ version = "0.1.1"
 authors = ["Hugo Freire <hfreire@abajar.com>"]
 description = "A web dashboard for telemetry in rust apps"
 license_file = "LICENSE"
+repository = "https://github.com/TLmaK0/rusty_dashed"
 build = "build.rs"
 
 [dependencies]
