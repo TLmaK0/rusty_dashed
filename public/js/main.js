@@ -1,7 +1,7 @@
 RustyDashed = {
   _gridItem: '<div class="grid-stack-item">\
                 <div class="grid-stack-item-content">\
-                  <svg style="width:90%;height:90%;"></svg>\
+                  <svg></svg>\
                 </div>\
               </div>',
   grid: $('.grid-stack'),

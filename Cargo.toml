@@ -16,6 +16,7 @@ phf = "0.7.12"
 includedir = "0.2.0"
 ws = "0.5.3"
 lazy_static = "0.1.16"
+rand = "0.3"
 
 [build-dependencies]
 includedir_codegen = "0.2.0"
@@ -26,3 +27,5 @@ default = ["serve_static"]
 serve_static = []
 
 debug_static = []
+
+telemetry = []
