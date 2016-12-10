@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate rusty_dashed;
+extern crate rand;
 
 use rusty_dashed::Dashboard;
 
@@ -19,23 +20,15 @@ fn main() {
 
     let mut dashboard = Dashboard::new();
     dashboard.add_graph("a1", "test1", 0, 0, 4, 4);
-    dashboard.add_graph("a2", "test1", 4, 0, 4, 4);
-    dashboard.add_graph("a3", "test1", 8, 0, 4, 4);
-    dashboard.add_graph("a4", "test1", 0, 4, 4, 4);
+    dashboard.add_graph("a2", "test2", 4, 0, 4, 4);
 
     let server = rusty_dashed::Server::serve_dashboard(dashboard);
 
     std::thread::sleep(std::time::Duration::from_millis(10000));
     telemetry!("a1", 1.0, data1);
 
-    std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a2", 1.0, data1);
-
-    std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a3", 1.0, data1);
-
-    std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a4", 1.0, data1);
-
-    server.join().unwrap();
+    loop {
+        telemetry!("a2", 1.0, rand::random::<f64>().to_string());
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
 }

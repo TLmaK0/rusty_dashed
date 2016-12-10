@@ -53,7 +53,7 @@ impl Dashboard {
 
         let pass_functions = self.graphs.iter().map(
             |graph| format!(
-                "function {}(data){{ {}('#{}',data); }};",
+                "function {}(data){{ {}('{}',data); }};",
                 graph.0,
                 graph.1,
                 graph.0
