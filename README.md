@@ -31,4 +31,4 @@ then create a folder `graphs` with two files `myd3jsFunction.js` and `myd3jsFunc
 
 
 *development*
-run `cargo run --example dashboard --features debug_static --no-default-features` to edit public files without rebuild
+run `cargo run --example dashboard --features "debug_static telemetry" --no-default-features` to edit public files without rebuild

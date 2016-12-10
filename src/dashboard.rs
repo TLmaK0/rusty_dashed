@@ -60,11 +60,21 @@ impl Dashboard {
                 )
             ).collect::<Vec<String>>();
 
+        let init_graphs = self.graphs.iter().map(
+            |graph| format!(
+                "RustyDashed.loadScript('graphs/{}', '{}', '{}');",
+                graph.1,
+                graph.1,
+                graph.0
+                )
+            ).collect::<Vec<String>>();
+
         format!("{} 
-                $(function(){{ {} {} {} }});",
+                $(function(){{ {} {} {} {}}});",
                 pass_functions.join("\n"),
                 graph_types_lines.join("\n"),
                 grids_lines.join("\n"),
+                init_graphs.join("\n"),
                 self.init_script()
             )
     }

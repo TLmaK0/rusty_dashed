@@ -1,7 +1,7 @@
 RustyDashed = {
   _gridItem: '<div class="grid-stack-item">\
                 <div class="grid-stack-item-content">\
-                  <svg></svg>\
+                  <div></div>\
                 </div>\
               </div>',
   grid: $('.grid-stack'),
@@ -11,7 +11,11 @@ RustyDashed = {
        type: 'text/css',
        href: path + '.css'
     }).appendTo('head');
-    $.getScript( path + '.js');
+  },
+  loadScript: function(path, functionName, id){
+    $.getScript( path + '.js', function(){
+      eval(functionName + '_init("' + id + '");');
+    });
   },
   createGridItem: function(id, x, y, width, height){
     var gridItem = $(this._gridItem);

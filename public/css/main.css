@@ -8,7 +8,7 @@
     background-color: #18bc9c;
 }
 
-.grid-stack-item-content svg {
+.grid-stack-item-content > * {
   width: 95%;
   height: 95%;
   margin-top: 2.5%;

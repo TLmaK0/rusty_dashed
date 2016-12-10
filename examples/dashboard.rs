@@ -26,16 +26,16 @@ fn main() {
     let server = rusty_dashed::Server::serve_dashboard(dashboard);
 
     std::thread::sleep(std::time::Duration::from_millis(10000));
-    telemetry!("a1", data1);
+    telemetry!("a1", 1.0, data1);
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a2", data1);
+    telemetry!("a2", 1.0, data1);
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a3", data1);
+    telemetry!("a3", 1.0, data1);
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
-    telemetry!("a4", data1);
+    telemetry!("a4", 1.0, data1);
 
     server.join().unwrap();
 }

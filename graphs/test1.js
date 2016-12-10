@@ -1,3 +1,7 @@
+function test1_init(id){
+  $("#" + id).replaceWith('<svg id="' + id + '"/>');
+}
+
 function test1(id, graph){
   var svg = d3.select(id),
       width = $(id).width(),
