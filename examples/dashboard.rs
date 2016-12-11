@@ -29,6 +29,6 @@ fn main() {
 
     loop {
         telemetry!("a2", 1.0, rand::random::<f64>().to_string());
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
