@@ -5,7 +5,6 @@ function test2_init(id){
 var test2Data = {};
 
 function test2(id, value){
-  console.log(!test2Data[id]);
   if (!test2Data[id]){
     test2Data[id] = [];
     for(i = 0; i < 100; i++){
