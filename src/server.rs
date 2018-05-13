@@ -37,36 +37,42 @@ impl Server {
             path => path
         };
 
-        let content = Server::get_file_content(&file_path); 
+        let content_result = Server::get_file_content(&file_path); 
 
-        let content_type = match Path::new(&file_path).extension().unwrap().to_str().unwrap() {
-            "html" => ContentType::html(),
-            "css" => ContentType(Mime(TopLevel::Text, SubLevel::Css, vec![])),
-            "js" | "json" => ContentType(Mime(TopLevel::Application, SubLevel::Javascript, vec![])),
-            _ => unimplemented!()
-        };
+        match content_result {
+            Ok(content) => {
+                let content_type = match Path::new(&file_path).extension().unwrap().to_str().unwrap() {
+                    "html" => ContentType::html(),
+                    "css" => ContentType(Mime(TopLevel::Text, SubLevel::Css, vec![])),
+                    "js" | "json" => ContentType(Mime(TopLevel::Application, SubLevel::Javascript, vec![])),
+                    "ico" => ContentType("image/x-icon".parse().unwrap()),
+                    _ => ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![]))
+                };
 
-        let response = Response::with((status::Ok, content, Header(content_type)));
-        Ok(response)
+                let response = Response::with((status::Ok, content, Header(content_type)));
+                Ok(response)
+            },
+            Err(_error) => Ok(Response::with(status::NotFound))
+        }
     }
 
     #[cfg(feature = "serve_static")]
-    fn get_file_content(file_path: &str) -> String {
+    fn get_file_content(file_path: &str) -> Result<String, String> {
         PUBLIC.get(&file_path).map(
-                |file_content| from_utf8(&file_content).unwrap().to_owned()
-            ).unwrap_or(String::from(""))
+                |file_content| Ok(from_utf8(&file_content).unwrap().to_owned())
+            )
     }
 
     #[cfg(feature = "debug_static")]
-    fn get_file_content(file_path: &str) -> String {
+    fn get_file_content(file_path: &str) -> Result<String, String> {
         if PUBLIC.get(&file_path).is_err() {
             println!("File not found: {}", file_path);
-            "".to_owned()
+            Err("File not found".to_string())
         } else {
             let mut file = File::open(file_path).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            contents
+            Ok(contents)
         }
     }
 

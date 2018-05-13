@@ -1,6 +1,6 @@
 [package]
 name = "rusty_dashed"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["Hugo Freire <hfreire@abajar.com>"]
 description = "A web dashboard for telemetry in rust apps"
 license = "MIT"
