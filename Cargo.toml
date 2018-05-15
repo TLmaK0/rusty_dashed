@@ -1,10 +1,9 @@
 [package]
 name = "rusty_dashed"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Hugo Freire <hfreire@abajar.com>"]
 description = "A web dashboard for telemetry in rust apps"
-license = "MIT"
-license_file = "LICENSE"
+license-file = "LICENSE"
 repository = "https://github.com/TLmaK0/rusty_dashed"
 build = "build.rs"
 

@@ -58,22 +58,28 @@ impl Server {
 
     #[cfg(feature = "serve_static")]
     fn get_file_content(file_path: &str) -> Result<String, String> {
-        PUBLIC.get(&file_path).map(
-                |file_content| Ok(from_utf8(&file_content).unwrap().to_owned())
-            )
+        match PUBLIC.get(&file_path) {
+            Err(_) => Server::path_not_found(file_path),
+            file => Ok(file.map( |file_content| from_utf8(&file_content).unwrap().to_owned()).unwrap())
+        }
     }
 
     #[cfg(feature = "debug_static")]
     fn get_file_content(file_path: &str) -> Result<String, String> {
-        if PUBLIC.get(&file_path).is_err() {
-            println!("File not found: {}", file_path);
-            Err("File not found".to_string())
-        } else {
-            let mut file = File::open(file_path).unwrap();
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).unwrap();
-            Ok(contents)
+        match PUBLIC.get(&file_path) {
+            Err(_) => Server::path_not_found(file_path),
+            _ => {
+                let mut file = File::open(file_path).unwrap();
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).unwrap();
+                Ok(contents)
+            }
         }
+    }
+
+    fn path_not_found(file_path: &str) -> Result<String, String>{
+        println!("File not found: {}", file_path);
+        Err("File not found".to_string())
     }
 
     fn start(&self) -> JoinHandle<()> {
