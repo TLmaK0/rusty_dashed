@@ -1,109 +1,127 @@
-use iron::headers::ContentType;
-use hyper::mime::{Mime, TopLevel, SubLevel};
-use iron::modifiers::Header;
-use iron::{Iron, Request, Response, IronResult};
-use iron::status;
-use mount::Mount;
+use rust_embed::Embed;
+use std::fs;
 use std::path::Path;
 use std::thread::{spawn, JoinHandle};
-use iron::middleware::Handler;
-use staticfile::Static;
-#[allow(unused_imports)] use std::fs::File;
-#[allow(unused_imports)] use std::io::Read;
-#[allow(unused_imports)] use std::str::from_utf8;
-use Dashboard;
-use WsServer;
+use crate::Dashboard;
+use crate::WsServer;
 
-include!(concat!(env!("OUT_DIR"), "/public.rs"));
+#[derive(Embed)]
+#[folder = "public/"]
+struct Asset;
 
 pub struct Server {
     dashboard: Dashboard,
 }
 
-lazy_static! {
-}
-
 impl Server {
     pub fn serve_dashboard(dashboard: Dashboard) -> JoinHandle<()> {
-        let join = Server{ dashboard: dashboard }.start();
+        let join = Server { dashboard }.start();
         WsServer::send_message("start".to_owned());
         join
     }
 
-    fn get_static_file(req: &mut Request) -> IronResult<Response> {
-        let request_path = format!("./public/{}", req.url.path().join("/"));
-        let file_path = match request_path.as_ref() {
-            "./public/" => "./public/index.html",
-            path => path
-        };
-
-        let content_result = Server::get_file_content(&file_path); 
-
-        match content_result {
-            Ok(content) => {
-                let content_type = match Path::new(&file_path).extension().unwrap().to_str().unwrap() {
-                    "html" => ContentType::html(),
-                    "css" => ContentType(Mime(TopLevel::Text, SubLevel::Css, vec![])),
-                    "js" | "json" => ContentType(Mime(TopLevel::Application, SubLevel::Javascript, vec![])),
-                    "ico" => ContentType("image/x-icon".parse().unwrap()),
-                    _ => ContentType(Mime(TopLevel::Text, SubLevel::Plain, vec![]))
+    fn start(&self) -> JoinHandle<()> {
+        let init_script = self.dashboard.get_init_script().to_owned();
+        spawn(move || {
+            let server = tiny_http::Server::http("0.0.0.0:3000").unwrap();
+            loop {
+                let request = match server.recv() {
+                    Ok(rq) => rq,
+                    Err(_) => break,
                 };
 
-                let response = Response::with((status::Ok, content, Header(content_type)));
-                Ok(response)
-            },
-            Err(_error) => Ok(Response::with(status::NotFound))
-        }
-    }
+                let url = request.url().to_string();
+                let path = url.trim_start_matches('/').split('?').next().unwrap_or("");
 
-    #[cfg(feature = "serve_static")]
-    fn get_file_content(file_path: &str) -> Result<String, String> {
-        match PUBLIC.get(&file_path) {
-            Err(_) => Server::path_not_found(file_path),
-            file => Ok(file.map( |file_content| from_utf8(&file_content).unwrap().to_owned()).unwrap())
-        }
-    }
+                // Route: /js/rusty-dashed.js -> dynamic init script
+                if path == "js/rusty-dashed.js" {
+                    let response = tiny_http::Response::from_string(&init_script)
+                        .with_header(
+                            tiny_http::Header::from_bytes(
+                                &b"Content-Type"[..],
+                                &b"application/javascript"[..],
+                            )
+                            .unwrap(),
+                        );
+                    let _ = request.respond(response);
+                    continue;
+                }
 
-    #[cfg(feature = "debug_static")]
-    fn get_file_content(file_path: &str) -> Result<String, String> {
-        match PUBLIC.get(&file_path) {
-            Err(_) => Server::path_not_found(file_path),
-            _ => {
-                let mut file = File::open(file_path).unwrap();
-                let mut contents = String::new();
-                file.read_to_string(&mut contents).unwrap();
-                Ok(contents)
+                // Route: /graphs/* -> serve from filesystem
+                if path.starts_with("graphs/") {
+                    let file_path = Path::new(path);
+                    if file_path.exists() {
+                        if let Ok(content) = fs::read_to_string(file_path) {
+                            let content_type = Self::content_type_for(path);
+                            let response = tiny_http::Response::from_string(content).with_header(
+                                tiny_http::Header::from_bytes(
+                                    &b"Content-Type"[..],
+                                    content_type.as_bytes(),
+                                )
+                                .unwrap(),
+                            );
+                            let _ = request.respond(response);
+                            continue;
+                        }
+                    }
+                    let _ = request.respond(tiny_http::Response::from_string("Not Found").with_status_code(404));
+                    continue;
+                }
+
+                // Route: / and everything else -> embedded static files
+                let asset_path = if path.is_empty() { "index.html" } else { path };
+
+                #[cfg(feature = "serve_static")]
+                {
+                    if let Some(file) = Asset::get(asset_path) {
+                        let content_type = Self::content_type_for(asset_path);
+                        let response =
+                            tiny_http::Response::from_data(file.data.to_vec()).with_header(
+                                tiny_http::Header::from_bytes(
+                                    &b"Content-Type"[..],
+                                    content_type.as_bytes(),
+                                )
+                                .unwrap(),
+                            );
+                        let _ = request.respond(response);
+                        continue;
+                    }
+                }
+
+                #[cfg(feature = "debug_static")]
+                {
+                    let debug_path = format!("./public/{}", asset_path);
+                    if Path::new(&debug_path).exists() {
+                        if let Ok(content) = fs::read_to_string(&debug_path) {
+                            let content_type = Self::content_type_for(asset_path);
+                            let response =
+                                tiny_http::Response::from_string(content).with_header(
+                                    tiny_http::Header::from_bytes(
+                                        &b"Content-Type"[..],
+                                        content_type.as_bytes(),
+                                    )
+                                    .unwrap(),
+                                );
+                            let _ = request.respond(response);
+                            continue;
+                        }
+                    }
+                }
+
+                let _ = request.respond(
+                    tiny_http::Response::from_string("Not Found").with_status_code(404),
+                );
             }
+        })
+    }
+
+    fn content_type_for(path: &str) -> &'static str {
+        match Path::new(path).extension().and_then(|e| e.to_str()) {
+            Some("html") => "text/html",
+            Some("css") => "text/css",
+            Some("js") | Some("json") => "application/javascript",
+            Some("ico") => "image/x-icon",
+            _ => "text/plain",
         }
     }
-
-    fn path_not_found(file_path: &str) -> Result<String, String>{
-        println!("File not found: {}", file_path);
-        Err("File not found".to_string())
-    }
-
-    fn start(&self) -> JoinHandle<()> {
-        let dashboard = DashboardMount{dashboard: self.dashboard.get_init_script().to_owned()};
-        let server = spawn(move || {
-            let mut mount = Mount::new();
-            mount
-                .mount("/", Server::get_static_file)
-                .mount("/graphs/", Static::new(Path::new("graphs")))
-                .mount("/js/rusty-dashed.js", dashboard);
-            Iron::new(mount).http("0.0.0.0:3000").unwrap();
-        }); 
-        server
-    }
-
 }
-
-struct DashboardMount {
-    pub dashboard: String
-}
-
-impl Handler for DashboardMount {
-    fn handle(&self, _req: &mut Request) -> IronResult<Response>{
-        Ok(Response::with((status::Ok, self.dashboard.to_owned())))
-    }
-}
-

@@ -1,53 +1,62 @@
 #[macro_use]
 extern crate rusty_dashed;
-extern crate rand;
-extern crate rustc_serialize;
 
-use rustc_serialize::json;
 use rusty_dashed::Dashboard;
+use serde::Serialize;
 
-#[derive(RustcEncodable)]
+#[derive(Serialize)]
 struct Node {
     id: String,
-    group: i64
+    group: i64,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Serialize)]
 struct Link {
     source: String,
     target: String,
-    value: f64
+    value: f64,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Serialize)]
 struct Net {
     nodes: Vec<Node>,
     links: Vec<Link>,
-    next: i64
+    next: i64,
 }
 
 impl Net {
     fn new() -> Net {
-        Net { nodes: vec![], links: vec![], next: 0 }
+        Net {
+            nodes: vec![],
+            links: vec![],
+            next: 0,
+        }
     }
 
-    fn add_node(&mut self, group: i64){
-        self.nodes.push(Node { id: Net::get_node_name(self.next), group: group });
+    fn add_node(&mut self, group: i64) {
+        self.nodes.push(Node {
+            id: Net::get_node_name(self.next),
+            group,
+        });
         self.next += 1;
     }
 
-    fn add_link(&mut self, source: i64, target: i64, value: f64){
-        self.links.push(Link { source: Net::get_node_name(source), target: Net::get_node_name(target), value: value });
+    fn add_link(&mut self, source: i64, target: i64, value: f64) {
+        self.links.push(Link {
+            source: Net::get_node_name(source),
+            target: Net::get_node_name(target),
+            value,
+        });
     }
 
-    fn get_node_name(node_id: i64) -> String{
+    fn get_node_name(node_id: i64) -> String {
         format!("node{}", node_id)
     }
 
-    pub fn generate_node(&mut self){
+    pub fn generate_node(&mut self) {
         let group = (rand::random::<f64>() * 20.0).round() as i64;
         self.add_node(group);
-        
+
         let source = self.next - 1;
         let mut target = source;
         while target == source {
@@ -74,7 +83,7 @@ fn main() {
 
     loop {
         net.generate_node();
-        telemetry!("a1", 1.0, json::encode(&net).unwrap());
+        telemetry!("a1", 1.0, serde_json::to_string(&net).unwrap());
 
         for _ in 0..10 {
             telemetry!("a2", 1.0, rand::random::<f64>().to_string());
